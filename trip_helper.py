@@ -31,14 +31,14 @@ get_bearings = lambda trip_pings: \
      for ping1, ping2 in list(zip(trip_pings, trip_pings[1:]))]
 
 # Get the list of time elapsed between each consecutive ping pairs
-get_timings = lambda trip_pings: \
+get_intervals = lambda trip_pings: \
     [(ping2.time - ping1.time).total_seconds()
      for ping1, ping2 in list(zip(trip_pings, trip_pings[1:]))]
 
 # Get the list of speeds from each ping to its respective next ping
 get_speeds = lambda trip_pings: \
     [distance/timing if timing > 0 else 0
-     for distance, timing in list(zip(get_distances(trip_pings), get_timings(trip_pings)))]
+     for distance, timing in list(zip(get_distances(trip_pings), get_intervals(trip_pings)))]
 
 # Determine if a trip's route is circular
 # The heuristics here is checking if any tripstop is repeated more than once.

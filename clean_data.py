@@ -1,6 +1,6 @@
 import pandas
 from datetime import datetime, timedelta
-from trip_helper import get_bearings, get_distances, get_speeds, get_timings, get_trip_pings
+from trip_helper import get_bearings, get_distances, get_speeds, get_intervals, get_trip_pings
 from utility import flatten
 
 # From trip_pings, return Trip pings with dirty pings removed
@@ -36,7 +36,7 @@ def split_trip_by_criteria(trip_pings_parts, criteria_function, threshold_value)
 # Split trip if edge is more than 30s.
 MAX_TIME = 30
 split_trip_by_time = lambda trip_pings_parts: \
-    split_trip_by_criteria(trip_pings_parts, get_timings, MAX_TIME)
+    split_trip_by_criteria(trip_pings_parts, get_intervals, MAX_TIME)
 
 # Split trip if edge is more than 28m/s (~= 100km/h, impossible in Singapore)
 MAX_SPEED = 28
