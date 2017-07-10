@@ -2,7 +2,7 @@ import pandas
 from constants import DATE_FORMAT
 from datetime import datetime, timedelta
 from trip_data import pings, routes, trips, tripstops 
-from utility import bearing, distance
+from utility import latlng_bearing, latlng_distance
 
 # Given a trip id, returns the boarding tripstops, sorted in ascending time
 get_trip_tripstops = lambda trip_id: tripstops[(tripstops['tripId'] == trip_id) 
@@ -22,12 +22,12 @@ def get_most_recent_pings(trip_id, date_time):
 
 # Get the list of distances between each consecutive ping pairs
 get_distances = lambda trip_pings: \
-    [distance(ping1.lat, ping1.lng, ping2.lat, ping2.lng)
+    [latlng_distance((ping1.lat, ping1.lng), (ping2.lat, ping2.lng))
      for ping1, ping2 in list(zip(trip_pings, trip_pings[1:]))]
 
 # Get the list of bearings from each ping to its respective next ping
 get_bearings = lambda trip_pings: \
-    [bearing(ping1.lat, ping1.lng, ping2.lat, ping2.lng)
+    [latlng_bearing((ping1.lat, ping1.lng), (ping2.lat, ping2.lng))
      for ping1, ping2 in list(zip(trip_pings, trip_pings[1:]))]
 
 # Get the list of time elapsed between each consecutive ping pairs

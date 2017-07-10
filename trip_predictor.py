@@ -11,7 +11,7 @@ from trip_data import trips
 from trip_helper import (
     is_circular_trip, get_most_recent_pings, get_trip_pings, get_trip_tripstops
 )
-from utility import distance, transpose
+from utility import latlng_distance, transpose
 
 def update_timings_for_trip(date_time, trip_id):
     trip_tripstops = get_trip_tripstops(trip_id)
@@ -86,8 +86,8 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
             continue
         nearest_ping_indices = kd_tree.query_ball_point(most_recent_ping_x_y, 
                                                         r=threshold_distance)
-        distances = [distance(most_recent_ping_lat_lng[0], most_recent_ping_lat_lng[1], 
-                              cleaned_trip_pings[i].lat, cleaned_trip_pings[i].lng) 
+        distances = [latlng_distance(most_recent_ping_lat_lng, 
+                         (cleaned_trip_pings[i].lat, cleaned_trip_pings[i].lng))
                      for i in nearest_ping_indices]
         timings = [cleaned_trip_pings[i].time for i in nearest_ping_indices]
         indices_ordered = \

@@ -5,7 +5,7 @@ from save_and_load_variables import read_from_pickle, write_to_pickle
 from scipy.spatial import cKDTree
 from trip_data import pings, tripstops
 from trip_helper import get_trip_pings, get_trip_tripstops
-from utility import distance, flatten
+from utility import latlng_distance, flatten
 
 p = Proj(init='epsg:3414')
 
@@ -58,8 +58,7 @@ def list_of_nearest_pings_to_tripstops(trip_id):
             if len(ping_indices) == 0:
                 continue
     
-            distances = [distance(trip_tripstops_lat_lng[tripstop_index][0], trip_tripstops_lat_lng[tripstop_index][1],
-                                  trip_pings_lat_lng[ping_index][0], trip_pings_lat_lng[ping_index][1]) 
+            distances = [latlng_distance(trip_tripstops_lat_lng[tripstop_index], trip_pings_lat_lng[ping_index]) 
                          for ping_index in ping_indices]
             nearest_pings_timings = [cleaned_trip_pings[ping_index].time for ping_index in ping_indices]
             
