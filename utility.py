@@ -70,10 +70,6 @@ def bearing(lat1, lng1, lat2, lng2):
         return compass_bearing
     return calculate_initial_compass_bearing((lat1, lng1), (lat2, lng2))
 
-# Check that everything in list_1 is contained in list_2
-def contains_all_values(list_1, list_2):
-    return set(list_1) == set(list_2)
-
 # Obtain the value in the n-th percentile. (Where n is in the range [0, 1])
 def percentile(values, n):
     values.sort()
