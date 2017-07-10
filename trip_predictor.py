@@ -6,15 +6,14 @@ from datetime import datetime, timedelta
 from ping_locator import (
     get_kd_tree, get_sorted_tripstop_nearest_pings, list_of_nearest_pings_to_tripstops, p
 )
+from save_and_load_variables import write_to_pickle
 from trip_data import trips
 from trip_helper import (
     is_circular_trip, get_most_recent_pings, get_trip_pings, get_trip_tripstops
 )
 from utility import distance, transpose
 
-def update_timings_for_trip(api_result, date_time, trip_id):
-    api_result[trip_id] = {}
-
+def update_timings_for_trip(date_time, trip_id):
     trip_tripstops = get_trip_tripstops(trip_id)
     trip_pings = get_trip_pings(trip_id)
     trip_pings = trip_pings[trip_pings['time'] <= date_time]
@@ -27,15 +26,13 @@ def update_timings_for_trip(api_result, date_time, trip_id):
     # TODO: Handle prediction for circular trips as well
     if is_circular_trip(trip_id):
         message = 'No prediction: No implementation for circular routes yet.'
-        update_api_result(api_result, trip_id, stop_ids, 
-            [message] * len(trip_tripstops))
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
         return
     
     # If the pings for trip_id fails check_rep, we show them the error message
     message = check_rep(trip_id, date_time=date_time)
     if message.startswith('No prediction'):
-        update_api_result(api_result, trip_id, stop_ids, 
-            [message] * len(trip_tripstops))
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
         return
 
     predicted_arrival_times = \
@@ -43,17 +40,15 @@ def update_timings_for_trip(api_result, date_time, trip_id):
 
     if not predicted_arrival_times:
         message = 'No prediction: Insufficient historical data for prediction.'
-        update_api_result(api_result, trip_id, stop_ids, 
-            [message] * len(trip_tripstops))
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
         return
 
-    # Save result in api_result
-    update_api_result(api_result, trip_id, stop_ids, predicted_arrival_times)
+    # Save and overwrite prediction
+    update_prediction(trip_id, stop_ids, predicted_arrival_times)
 
-def update_api_result(api_result, trip_id, stop_ids, date_times):
-    api_result[trip_id] = {}
-    for stop_id, date_time in zip(stop_ids, date_times):
-        api_result[trip_id][stop_id] = date_time
+def update_prediction(trip_id, stop_ids, date_times):
+    filename = 'results/prediction-{}.pickle'.format(str(trip_id))
+    write_to_pickle(filename, dict(zip(stop_ids, date_times)))
 
 def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     threshold_distance = 20
