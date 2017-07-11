@@ -22,17 +22,22 @@ def to_pandas(column_names, records):
     return table
 
 # Helper function to do SQL SELECT query
-def query(select_str, from_str, where_str='', order_by_str=''):
+def query(select_str, from_str, where_str='', order_by_str='', column_names=[]):
     cursor.execute('{} {} {} {}'.format(select_str, from_str, where_str, order_by_str))
-    return cursor.fetchall()
+    records = cursor.fetchall()
+    if len(column_names) == 0 or len(records) == 0 or len(records[0]) != len(column_names):
+        return pd.DataFrame()
+    return to_pandas(column_names, records)
 
 def get_routes():
     return query('SELECT id, path',
-                 'FROM public.routes')
+                 'FROM public.routes',
+                 column_names=['id', 'path'])
 
 def get_trips():
     return query('SELECT id, date, "routeId"',
-                 'FROM public.trips')
+                 'FROM public.trips',
+                 column_names=['id', 'date', 'routeId'])
 
 def get_tripstops(trip_id=None):
     where_str_part = 'AND "tripId" = {}'.format(trip_id) if trip_id else ''
@@ -40,7 +45,8 @@ def get_tripstops(trip_id=None):
                          'ST_X(s.coordinates), ST_Y(s.coordinates)',
                  'FROM public.stops AS s INNER JOIN "tripStops" AS ts ON s.id = "stopId"',
                  where_str='WHERE "canBoard" = True {}'.format(where_str_part),
-                 order_by_str="ORDER BY time")
+                 order_by_str="ORDER BY time",
+                 column_names=['id', 'tripId', 'stopId', 'canBoard', 'canAlight', 'time', 'lng', 'lat'])
 
 def get_pings(trip_id=None, recent=False):
     where_str_part_1 = '"tripId" = {}'.format(trip_id) if trip_id else ''
@@ -55,7 +61,8 @@ def get_pings(trip_id=None, recent=False):
     return query('SELECT id, ST_X(coordinates), ST_Y(coordinates), time, "tripId"',
                  'FROM public.pings',
                  where_str=where_str,
-                 order_by_str="ORDER BY time")
+                 order_by_str="ORDER BY time",
+                 column_names=['id', 'lng', 'lat', 'time', 'tripId'])
 
 def get_operating_trip_ids(date_time=datetime.now()):
     sql = 'SELECT "tripId" ' \
@@ -68,14 +75,8 @@ def get_operating_trip_ids(date_time=datetime.now()):
 
 # Sanity checks:
 # Singapore Latitude (Y): 1.29, Longitude (X): 103.85
-#routes = to_pandas(['id', 'path'], 
-#                   get_routes())
-#trips = to_pandas(['id', 'date', 'routeId'], 
-#                   get_trips())
-#tripstops = to_pandas(['id', 'tripId', 'stopId', 'canBoard', 'canAlight', 'time', 'lng', 'lat'], 
-#                      get_tripstops())
-#pings = to_pandas(['id', 'lng', 'lat', 'time', 'tripId'], 
-#                  get_pings())
-
-#print(get_operating_trip_ids())
-#print(get_tripstops(trip_id=22208))
+# routes = get_routes()
+# trips = get_trips()
+# tripstops = get_tripstops()
+# pings = get_pings()
+# print(get_operating_trip_ids())
