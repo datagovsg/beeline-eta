@@ -13,6 +13,13 @@ DATABASE_URI = os.environ.get("DATABASE_URI")
 
 conn = psycopg2.connect(DATABASE_URI)
 cursor = conn.cursor()
+cursor.execute("SET TIME ZONE 'Singapore';")
+
+# Helper function to convert results from SQL SELECT query to pandas dataframe
+def to_pandas(column_names, records):
+    table = pd.DataFrame(records)
+    table.columns = column_names
+    return table
 
 # Helper function to do SQL SELECT query
 def query(select_str, from_str, where_str='', order_by_str=''):
@@ -37,7 +44,7 @@ def get_tripstops(trip_id=None):
 
 def get_pings(trip_id=None, recent=False):
     where_str_part_1 = '"tripId" = {}'.format(trip_id) if trip_id else ''
-    where_str_part_2 = "time >= NOW() - INTERVAL '116 hours'" if recent else ''
+    where_str_part_2 = "time >= NOW() - INTERVAL '3 minutes'" if recent else ''
     where_str = ''
     if trip_id and recent:
         where_str = 'WHERE {} AND {}'.format(where_str_part_1, where_str_part_2)
@@ -58,11 +65,6 @@ def get_operating_trip_ids(date_time=datetime.now()):
         + "   AND (%s) <= MAX(time) + INTERVAL '15 minutes'"
     cursor.execute(sql, (date_time, date_time))
     return flatten(cursor.fetchall())
-
-def to_pandas(column_names, records):
-    table = pd.DataFrame(records)
-    table.columns = column_names
-    return table
 
 # Sanity checks:
 # Singapore Latitude (Y): 1.29, Longitude (X): 103.85
