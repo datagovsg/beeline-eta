@@ -1,9 +1,9 @@
+import global_data
 import pandas
 from clean_data import clean_rep
 from pyproj import Proj
 from save_and_load_variables import read_from_pickle, write_to_pickle
 from scipy.spatial import cKDTree
-from trip_data import pings, tripstops
 from trip_helper import get_trip_pings, get_trip_tripstops
 from utility import latlng_distance, flatten
 
@@ -26,7 +26,7 @@ def get_kd_tree(trip_id):
     return kd_tree
 
 def get_sorted_tripstop_nearest_pings(nearest_pings_id_per_tripstop_id):
-    timings_tripstop_ids_pings = [(tripstops.loc[tripstop_id].time, tripstop_id, pings.loc[ping_id]) 
+    timings_tripstop_ids_pings = [(global_data.tripstops.loc[tripstop_id].time, tripstop_id, global_data.pings.loc[ping_id]) 
                                   for tripstop_id, ping_id in nearest_pings_id_per_tripstop_id.items()]
     return [(tripstop_id, ping) for timing, tripstop_id, ping in sorted(timings_tripstop_ids_pings)]
 

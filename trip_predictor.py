@@ -1,3 +1,4 @@
+import global_data
 import numpy as np
 import pandas
 from clean_data import check_rep, get_cleaned_trip_pings
@@ -7,7 +8,6 @@ from ping_locator import (
     get_kd_tree, get_sorted_tripstop_nearest_pings, list_of_nearest_pings_to_tripstops, p
 )
 from save_and_load_variables import write_to_pickle
-from trip_data import trips
 from trip_helper import (
     is_circular_trip, get_most_recent_pings, get_trip_pings, get_trip_tripstops
 )
@@ -20,7 +20,7 @@ def update_timings_for_trip(date_time, trip_id):
 
     stop_ids = trip_tripstops.stopId.tolist()
 
-    tripstop_arrival_times = [datetime.strptime(str(date_time), DATETIME_FORMAT)
+    tripstop_arrival_times = [datetime.strptime(str(date_time), DATETIME_FORMAT + '+08:00')
                               for date_time in trip_tripstops.time.tolist()]
     
     # TODO: Handle prediction for circular trips as well
@@ -62,11 +62,13 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
                              most_recent_ping_lat_lng[0])
     
     # Get alternative past trip_ids for the same route as main_trip_id 
-    route_id = trips.loc[main_trip_id].routeId
-    trip_ids = trips[(trips['routeId'] == route_id) 
-                   & (trips['date'] < date_time.strftime(DATE_FORMAT))] \
-                    .sort_values('date', ascending=False) \
-                    .index
+    route_id = global_data.trips.loc[main_trip_id].routeId
+
+    trip_ids = global_data.trips[(global_data.trips['routeId'] == route_id)
+                   & (global_data.trips['date'] != None)
+                   & (global_data.trips['date'] < date_time.date())] \
+               .sort_values('date', ascending=False) \
+               .index
 
     main_trip_tripstops = get_trip_tripstops(main_trip_id)
 
