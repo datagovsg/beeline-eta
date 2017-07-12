@@ -3,7 +3,6 @@ from flask import Flask, abort, jsonify
 
 from datetime import datetime
 import pickle
-import pytz
 
 app = Flask(__name__)
 
