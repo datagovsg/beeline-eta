@@ -1,6 +1,6 @@
 import multiprocessing
 from datetime import datetime
-from trip_helper import get_operating_trip_ids
+from db_logic import get_operating_trip_ids
 from trip_predictor import update_timings_for_trip
 
 def run(date_time):

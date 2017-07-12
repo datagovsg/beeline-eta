@@ -1,23 +1,24 @@
+import global_data
 import pandas
 from constants import DATE_FORMAT
 from datetime import datetime, timedelta
-from trip_data import pings, routes, trips, tripstops 
 from utility import latlng_bearing, latlng_distance
 
 # Given a trip id, returns the boarding tripstops, sorted in ascending time
-get_trip_tripstops = lambda trip_id: tripstops[(tripstops['tripId'] == trip_id) 
-                                             & (tripstops['canBoard'] == 't')] \
-                                              .sort_values('time')
+get_trip_tripstops = lambda trip_id: global_data.tripstops[
+                                         (global_data.tripstops['tripId'] == trip_id) 
+                                       & (global_data.tripstops['canBoard'] == True)] \
+                                     .sort_values('time')
 
 # Given a trip id, returns the pings, sorted in ascending time
-get_trip_pings = lambda trip_id: pings[pings['tripId'] == trip_id] \
+get_trip_pings = lambda trip_id: global_data.pings[global_data.pings['tripId'] == trip_id] \
                                  .sort_values('time')
 
 # Get pings from first trip ping time to current date_time,
 # sorted starting from the most recent ping.
 def get_most_recent_pings(trip_id, date_time):
-    return pings[(pings['tripId'] == trip_id)
-               & (pings['time'] <= date_time)] \
+    return global_data.pings[(global_data.pings['tripId'] == trip_id)
+               & (global_data.pings['time'] <= date_time)] \
                 .sort_values('time', ascending=False)
 
 # Get the list of distances between each consecutive ping pairs
@@ -47,23 +48,3 @@ is_circular_trip = lambda trip_id: any([count > 1
                                         get_trip_tripstops(trip_id)
                                         .groupby('stopId')
                                         .size()])
-
-# Input: date_time (datetime object)
-# Output: List of trip_ids that are operating at stated date_time.
-def get_operating_trip_ids(date_time):
-    date_string = datetime.strftime(date_time, DATE_FORMAT)
-    trip_ids = trips[trips['date'] == date_string].index.tolist()
-    
-    # Reduce the search space for all_tripstops later in the for-loop
-    filtered_tripstops = tripstops[tripstops['tripId'].isin(trip_ids)]
-    
-    # Collect a list of trip_ids that are operational 
-    # within (start - 20) min and (end + 20) mins of date_time
-    operating_trip_ids = []
-    for trip_id in trip_ids:
-        trip_tripstops = filtered_tripstops[filtered_tripstops['tripId'] == trip_id] \
-                         .sort_values('time')
-        if trip_tripstops.iloc[0].time - timedelta(minutes=20) < date_time \
-        and date_time < trip_tripstops.iloc[-1].time + timedelta(minutes=20):
-            operating_trip_ids.append(trip_id)
-    return operating_trip_ids
