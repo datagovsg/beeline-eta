@@ -5,13 +5,13 @@ from clean_data import check_rep, get_cleaned_trip_pings
 from constants import DATETIME_FORMAT, DATE_FORMAT
 from datetime import datetime, timedelta
 from ping_locator import (
-    get_kd_tree, get_sorted_tripstop_nearest_pings, list_of_nearest_pings_to_tripstops, p
+    get_kd_tree, list_of_nearest_pings_to_tripstops, p
 )
 from save_and_load_variables import write_to_pickle
 from trip_helper import (
     is_circular_trip, get_most_recent_pings, get_trip_pings, get_trip_tripstops
 )
-from utility import latlng_distance, transpose
+from utility import is_sorted, latlng_distance, transpose
 
 def update_timings_for_trip(date_time, trip_id):
     trip_tripstops = get_trip_tripstops(trip_id)
@@ -81,7 +81,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
         if trip_tripstops.stopId.tolist() != main_trip_tripstops.stopId.tolist():
             continue
         
-        # Find the trip ping that is closest to most_recent_ping (<50m)
+        # Find the trip ping that is closest to most_recent_ping (<20m)
         cleaned_trip_pings = get_cleaned_trip_pings(get_trip_pings(trip_id))
         kd_tree = get_kd_tree(trip_id)
         if not kd_tree:
@@ -100,15 +100,23 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
         closest_ping = cleaned_trip_pings[indices_ordered[0]]
 
         # For the trip ping, take difference in timing from trip ping to each future tripstops
-        nearest_ping_id_per_tripstop_id = list_of_nearest_pings_to_tripstops(trip_id)
-        if len(nearest_ping_id_per_tripstop_id) != len(trip_tripstops):
+        sorted_tripstop_to_nearest_ping = list_of_nearest_pings_to_tripstops(trip_id)
+
+        # Check that there is a nearest ping at every tripstop
+        if len(sorted_tripstop_to_nearest_ping) != len(trip_tripstops):
             continue
         
-        sorted_tripstop_nearest_pings = \
-            [ping for tripstop_id, ping in 
-             get_sorted_tripstop_nearest_pings(nearest_ping_id_per_tripstop_id)]
-        duration_per_tripstop = [(ping.time - closest_ping.time).total_seconds() 
-                                 for ping in sorted_tripstop_nearest_pings]
+        nearest_ping_timing_per_tripstop = \
+            [global_data.pings.loc[ping_id].time
+             for tripstop_id, ping_id in sorted_tripstop_to_nearest_ping]
+        
+        # Check that the timings of the nearest pings is sorted
+        if not is_sorted(nearest_ping_timing_per_tripstop):
+            continue
+
+        duration_per_tripstop = \
+            [(ping_timing - closest_ping.time).total_seconds() 
+             for ping_timing in nearest_ping_timing_per_tripstop]
         list_of_trip_tripstop_durations.append(duration_per_tripstop)
 
     # After getting a few values from prev step, can take mean + S.D.
@@ -124,6 +132,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     
     duration_per_trip = [mean_duration 
                          for mean_duration, sd_duration in mean_sd_of_duration_per_trip]
-    predicted_arrival_time = [most_recent_pings.iloc[0].time + timedelta(seconds=duration)
-                              for duration in duration_per_trip]
-    return predicted_arrival_time
+    predicted_arrival_times = \
+        [most_recent_pings.iloc[0].time.to_datetime() + timedelta(seconds=duration)
+         for duration in duration_per_trip]
+    return predicted_arrival_times

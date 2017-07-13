@@ -78,12 +78,6 @@ def latlng_bearing(pointA, pointB):
 
     return compass_bearing
 
-# Obtain the value in the n-th percentile. (Where n is in the range [0, 1])
-def percentile(values, n):
-    values.sort()
-    pos = min(int(len(values) * n), len(values) - 1)
-    return values[pos]
-
 # To handle Google Maps API in development mode
 def get_future_datetime(old_datetime, is_production=False):
     if is_production:
