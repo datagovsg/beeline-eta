@@ -46,9 +46,12 @@ def update_timings_for_trip(date_time, trip_id):
     # Save and overwrite prediction
     update_prediction(trip_id, stop_ids, predicted_arrival_times)
 
-def update_prediction(trip_id, stop_ids, date_times):
+    return dict(zip(stop_ids, predicted_arrival_times))
+
+
+def update_prediction(trip_id, stop_ids, predicted_arrival_times):
     filename = 'results/prediction-{}.pickle'.format(str(trip_id))
-    write_to_pickle(filename, dict(zip(stop_ids, date_times)))
+    write_to_pickle(filename, dict(zip(stop_ids, predicted_arrival_times)))
 
 def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     threshold_distance = 20

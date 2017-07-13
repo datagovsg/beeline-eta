@@ -1,8 +1,10 @@
+import glob
 import global_data
 import os
 import pandas as pd
 import pickle
 import psycopg2
+import pytz
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from os.path import join, dirname
@@ -141,14 +143,30 @@ def get_recent_pings(current_datetime=datetime.now(), interval_minutes=2):
 
 def get_operating_trip_ids(date_time=datetime.now()):
     sql = """
-          SELECT "tripId"
-          FROM "tripStops"
-          GROUP BY "tripId"
-          HAVING %(date_time)s >= MIN(time) - INTERVAL '15 minutes'
-             AND %(date_time)s <= MAX(time) + INTERVAL '15 minutes'
+          SELECT
+              "tripId"
+          FROM
+              "tripStops"
+          GROUP BY
+              "tripId"
+          HAVING
+              %(date_time)s >= MIN(time) - INTERVAL '15 minutes'
+              AND %(date_time)s <= MAX(time) + INTERVAL '15 minutes'
           """
     cursor.execute(sql, {'date_time': date_time})
     return flatten(cursor.fetchall())
+
+def get_offset(minutes=20):
+    sql = """
+          SELECT
+              MAX(time)
+          FROM
+              pings
+          """
+    cursor.execute(sql)
+    latest_known_datetime = cursor.fetchall()[0][0]
+    time_diff = datetime.now(pytz.timezone('Singapore')) - latest_known_datetime
+    return time_diff + timedelta(minutes=minutes)
 
 def setup_data():
     global_data.routes = get_routes()
@@ -158,32 +176,31 @@ def setup_data():
 
 # For routes, trips, tripstops, this function will be called every day
 # We first destroy the 3 files, then we regenerate re-get all the routes, trips and tripstops
-def destroy_file(filename):
-    os.remove(filename)
-
 def destroy_and_recreate():
     destroy_and_recreate_routes()
     destroy_and_recreate_trips()
     destroy_and_recreate_tripstops()
+    destroy_predictions()
 
 def destroy_and_recreate_routes():
     # Destroy file first so the get operation will always go to exception clause.
-    destroy_file(DATA_FILENAME_ROUTES)
+    os.remove(DATA_FILENAME_ROUTES)
     global_data.routes = get_routes()
-    return routes
 
 def destroy_and_recreate_trips():
     # Destroy file first so the get operation will always go to exception clause.
-    destroy_file(DATA_FILENAME_TRIPS)
+    os.remove(DATA_FILENAME_TRIPS)
     global_data.trips = get_trips()
-    return trips
 
 def destroy_and_recreate_tripstops():
     # Destroy file first so the get operation will always go to exception clause.
-    destroy_file(DATA_FILENAME_TRIPSTOPS)
+    os.remove(DATA_FILENAME_TRIPSTOPS)
     global_data.tripstops = get_tripstops()
-    return tripstops
 
+def destroy_predictions():
+    files = glob.glob('results/*')
+    for f in files:
+        os.remove(f)
 
 # For pings, this function will be called every minute
 # We will take the past 3 mins pings and attempt to add it to the existing pings
