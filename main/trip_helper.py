@@ -6,7 +6,7 @@ from utility import latlng_bearing, latlng_distance
 
 # Given a trip id, returns the boarding tripstops, sorted in ascending time
 get_trip_tripstops = lambda trip_id: global_data.tripstops[
-                                         (global_data.tripstops['tripId'] == trip_id) 
+                                         (global_data.tripstops['tripId'] == trip_id)
                                        & (global_data.tripstops['canBoard'] == True)] \
                                      .sort_values('time')
 
@@ -18,8 +18,8 @@ get_trip_pings = lambda trip_id: global_data.pings[global_data.pings['tripId'] =
 # sorted starting from the most recent ping.
 def get_most_recent_pings(trip_id, date_time):
     return global_data.pings[(global_data.pings['tripId'] == trip_id)
-               & (global_data.pings['time'] <= date_time)] \
-                .sort_values('time', ascending=False)
+                           & (global_data.pings['time'] <= date_time)] \
+           .sort_values('time', ascending=False)
 
 # Get the list of distances between each consecutive ping pairs
 get_distances = lambda trip_pings: \

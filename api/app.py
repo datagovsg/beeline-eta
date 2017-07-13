@@ -6,6 +6,8 @@ import pickle
 
 app = Flask(__name__)
 
+get_filename = lambda trip_id: '../main/results/prediction-{}.pickle'.format(trip_id)
+
 def stringify_predictions(predictions):
     result = {}
     for stop_id, date_time in predictions.items():
@@ -18,9 +20,8 @@ def stringify_predictions(predictions):
 
 @app.route('/api/v1.0/<int:trip_id>', methods=['GET'])
 def get_predictions(trip_id):
-    filename = '../results/prediction-{}.pickle'.format(trip_id)
     try:
-        predictions = pickle.load(open(filename, 'rb'))
+        predictions = pickle.load(open(get_filename(trip_id), 'rb'))
     except:
         abort(404)
     
@@ -30,9 +31,8 @@ def get_predictions(trip_id):
 
 @app.route('/api/v1.0/<int:trip_id>/<int:stop_id>', methods=['GET'])
 def get_prediction(trip_id, stop_id):
-    filename = '../results/prediction-{}.pickle'.format(trip_id)
     try:
-        predictions = pickle.load(open(filename, 'rb'))
+        predictions = pickle.load(open(get_filename(trip_id), 'rb'))
     except:
         abort(404)
     
