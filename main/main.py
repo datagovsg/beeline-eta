@@ -19,8 +19,8 @@ def run_forever(seconds=60, offset=timedelta()):
 
         run(date_time)
 
-def replay_date():
-    offset = get_offset(minutes=20)
+def replay_date(minutes=10):
+    offset = get_offset(minutes=minutes)
     run_forever(offset=offset)
 
 if __name__ == '__main__':

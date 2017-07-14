@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 from db_logic import get_offset, get_pings, get_tripstops
 from run import update_timings_for_trip
-from ping_locator import get_kd_tree, list_of_nearest_pings_to_tripstops
+from ping_locator import list_of_nearest_pings_to_tripstops
 
 def get_predicted_arrival_timing(trip_id, next_stop_id):
     date_time = datetime.now() - get_offset(minutes=8 * 60 + 10)
@@ -13,6 +13,8 @@ def get_predicted_arrival_timing(trip_id, next_stop_id):
     return next_stop_predicted_arrival_timing
 
 def get_actual_arrival_timing(trip_id, next_stop_id):
+    date_time = datetime.now() - get_offset(minutes=8 * 60 + 10)
+    # Use default current datetime, so all pings are considered for actual arrival timings
     nearest_ping_id_per_tripstop_id = list_of_nearest_pings_to_tripstops(trip_id)
     if not nearest_ping_id_per_tripstop_id:
         return None

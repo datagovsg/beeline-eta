@@ -83,7 +83,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
         
         # Find the trip ping that is closest to most_recent_ping (<20m)
         cleaned_trip_pings = get_cleaned_trip_pings(get_pings(trip_id=trip_id))
-        kd_tree = get_kd_tree(trip_id)
+        kd_tree = get_kd_tree(trip_id, date_time=date_time)
         if not kd_tree:
             continue
         nearest_ping_indices = kd_tree.query_ball_point(most_recent_ping_x_y, 
@@ -100,7 +100,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
         closest_ping = cleaned_trip_pings[indices_ordered[0]]
 
         # For the trip ping, take difference in timing from trip ping to each future tripstops
-        sorted_tripstop_to_nearest_ping = list_of_nearest_pings_to_tripstops(trip_id)
+        sorted_tripstop_to_nearest_ping = list_of_nearest_pings_to_tripstops(trip_id, date_time=date_time)
 
         # Check that there is a nearest ping at every tripstop
         if len(sorted_tripstop_to_nearest_ping) != len(trip_tripstops):
