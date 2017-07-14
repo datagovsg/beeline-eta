@@ -1,24 +1,13 @@
-import global_data
 import pandas
 from constants import DATE_FORMAT
 from datetime import datetime, timedelta
+from db_logic import get_tripstops, get_pings
 from utility import latlng_bearing, latlng_distance
-
-# Given a trip id, returns the boarding tripstops, sorted in ascending time
-get_trip_tripstops = lambda trip_id: global_data.tripstops[
-                                         (global_data.tripstops['tripId'] == trip_id)
-                                       & (global_data.tripstops['canBoard'] == True)] \
-                                     .sort_values('time')
-
-# Given a trip id, returns the pings, sorted in ascending time
-get_trip_pings = lambda trip_id: global_data.pings[global_data.pings['tripId'] == trip_id] \
-                                 .sort_values('time')
 
 # Get pings from first trip ping time to current date_time,
 # sorted starting from the most recent ping.
 def get_most_recent_pings(trip_id, date_time):
-    return global_data.pings[(global_data.pings['tripId'] == trip_id)
-                           & (global_data.pings['time'] <= date_time)] \
+    return get_pings(trip_id=trip_id, newest_datetime=date_time) \
            .sort_values('time', ascending=False)
 
 # Get the list of distances between each consecutive ping pairs
@@ -45,6 +34,6 @@ get_speeds = lambda trip_pings: \
 # The heuristics here is checking if any tripstop is repeated more than once.
 is_circular_trip = lambda trip_id: any([count > 1 
                                         for count in 
-                                        get_trip_tripstops(trip_id)
+                                        get_tripstops(trip_id=trip_id)
                                         .groupby('stopId')
                                         .size()])

@@ -1,34 +1,35 @@
-import global_data
 import numpy as np
 import pandas
 from clean_data import check_rep, get_cleaned_trip_pings
 from constants import DATETIME_FORMAT, DATE_FORMAT
 from datetime import datetime, timedelta
+from db_logic import (
+    get_pings, get_trips, get_tripstops, get_past_trips_of_route
+)
 from ping_locator import (
     get_kd_tree, list_of_nearest_pings_to_tripstops, p
 )
 from save_and_load_variables import write_to_pickle
 from trip_helper import (
-    is_circular_trip, get_most_recent_pings, get_trip_pings, get_trip_tripstops
+    is_circular_trip, get_most_recent_pings
 )
 from utility import is_sorted, latlng_distance, transpose
 
 def update_timings_for_trip(date_time, trip_id):
-    trip_tripstops = get_trip_tripstops(trip_id)
-    trip_pings = get_trip_pings(trip_id)
-    trip_pings = trip_pings[trip_pings['time'] <= date_time]
+    trip_tripstops = get_tripstops(trip_id=trip_id)
+    trip_pings = get_pings(trip_id=trip_id, newest_datetime=date_time)
 
     stop_ids = trip_tripstops.stopId.tolist()
 
     tripstop_arrival_times = [datetime.strptime(str(date_time), DATETIME_FORMAT + '+08:00')
                               for date_time in trip_tripstops.time.tolist()]
-    
+
     # TODO: Handle prediction for circular trips as well
     if is_circular_trip(trip_id):
         message = 'No prediction: No implementation for circular routes yet.'
         update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
         return
-    
+
     # If the pings for trip_id fails check_rep, we show them the error message
     message = check_rep(trip_id, date_time=date_time)
     if message.startswith('No prediction'):
@@ -65,27 +66,23 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
                              most_recent_ping_lat_lng[0])
     
     # Get alternative past trip_ids for the same route as main_trip_id 
-    route_id = global_data.trips.loc[main_trip_id].routeId
+    route_id = get_trips(trip_id=main_trip_id).iloc[0].routeId
 
-    trip_ids = global_data.trips[(global_data.trips['routeId'] == route_id)
-                   & (global_data.trips['date'] != None)
-                   & (global_data.trips['date'] < date_time.date())] \
-               .sort_values('date', ascending=False) \
-               .index
+    trip_ids = get_past_trips_of_route(route_id, date_time).index
 
-    main_trip_tripstops = get_trip_tripstops(main_trip_id)
+    main_trip_tripstops = get_tripstops(trip_id=main_trip_id)
 
     list_of_trip_tripstop_durations = []
     for trip_id in trip_ids:
         if len(list_of_trip_tripstop_durations) >= 5:
             break
 
-        trip_tripstops = get_trip_tripstops(trip_id)
+        trip_tripstops = get_tripstops(trip_id=trip_id)
         if trip_tripstops.stopId.tolist() != main_trip_tripstops.stopId.tolist():
             continue
         
         # Find the trip ping that is closest to most_recent_ping (<20m)
-        cleaned_trip_pings = get_cleaned_trip_pings(get_trip_pings(trip_id))
+        cleaned_trip_pings = get_cleaned_trip_pings(get_pings(trip_id=trip_id))
         kd_tree = get_kd_tree(trip_id)
         if not kd_tree:
             continue
@@ -110,7 +107,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
             continue
         
         nearest_ping_timing_per_tripstop = \
-            [global_data.pings.loc[ping_id].time
+            [get_pings(ping_id=ping_id).iloc[0].time
              for tripstop_id, ping_id in sorted_tripstop_to_nearest_ping]
         
         # Check that the timings of the nearest pings is sorted

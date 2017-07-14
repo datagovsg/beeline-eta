@@ -1,10 +1,9 @@
-import global_data
 import pandas
 from clean_data import clean_rep
+from db_logic import get_pings, get_tripstops
 from pyproj import Proj
 from save_and_load_variables import read_from_pickle, write_to_pickle
 from scipy.spatial import cKDTree
-from trip_helper import get_trip_pings, get_trip_tripstops
 from utility import latlng_distance, flatten
 
 p = Proj(init='epsg:3414')
@@ -15,7 +14,7 @@ def get_kd_tree(trip_id):
     try:
         kd_tree = read_from_pickle(kd_tree_filename)
     except:
-        trip_pings = get_trip_pings(trip_id)
+        trip_pings = get_pings(trip_id=trip_id)
         cleaned_trip_pings = flatten(clean_rep(trip_pings))
         if len(cleaned_trip_pings) == 0:
             return None
@@ -32,11 +31,11 @@ def list_of_nearest_pings_to_tripstops(trip_id):
     except:
         threshold_distance = 50 # If the ping is more than 50m away, it's not 'near' the bus stop
     
-        trip_pings = get_trip_pings(trip_id)
+        trip_pings = get_pings(trip_id=trip_id)
         cleaned_trip_pings = flatten(clean_rep(trip_pings))
         trip_pings_lat_lng = [(ping.lat, ping.lng) for ping in cleaned_trip_pings]
         
-        trip_tripstops = get_trip_tripstops(trip_id)
+        trip_tripstops = get_tripstops(trip_id=trip_id)
         trip_tripstops_lat_lng = [(tripstop.lat, tripstop.lng) for tripstop in trip_tripstops.itertuples()]
         trip_tripstops_x_y = [p(lng, lat) for lat, lng in trip_tripstops_lat_lng]
 
