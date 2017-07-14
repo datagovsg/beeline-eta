@@ -1,6 +1,7 @@
 import pandas
 from datetime import datetime, timedelta
-from trip_helper import get_bearings, get_distances, get_speeds, get_intervals, get_trip_pings
+from db_logic import get_pings
+from trip_helper import get_bearings, get_distances, get_speeds, get_intervals
 from utility import flatten
 
 # From trip_pings, return Trip pings with dirty pings removed
@@ -104,16 +105,16 @@ def clean_rep(trip_pings):
 
 # Check if the pings by a trip violates any condition for prediction.
 def check_rep(trip_id, date_time=datetime.now()):
-    trip_pings = get_trip_pings(trip_id)
+    trip_pings = get_pings(trip_id=trip_id)
     trip_pings_parts = clean_rep(trip_pings)
-    
+
     if len(trip_pings_parts) == 0:
         return 'No prediction: No trip pings at all'
-    
+
     if len(trip_pings_parts[-1]) < 3:
         return 'No prediction: Insufficient latest trip pings for prediction'
-    
-    if date_time - trip_pings_parts[-1][-1].time >= timedelta(minutes=1):
+
+    if date_time - trip_pings_parts[-1][-1].time.replace(tzinfo=None) >= timedelta(minutes=1):
         return 'No prediction: The latest ping is more than 1 minute from now; prediction will be inaccurate'
-    
+
     return 'Can predict'

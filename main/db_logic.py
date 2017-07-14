@@ -1,28 +1,21 @@
 import glob
-import global_data
 import os
 import pandas as pd
 import pickle
 import psycopg2
 import pytz
+from constants import (
+    COLUMN_NAMES_PINGS, COLUMN_NAMES_ROUTES, COLUMN_NAMES_TRIPS, COLUMN_NAMES_TRIPSTOPS
+)
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from os.path import join, dirname
 from utility import flatten
 
-DATA_FILENAME_ROUTES = 'preprocessed/routes.pkl'
-DATA_FILENAME_TRIPS = 'preprocessed/trips.pkl'
-DATA_FILENAME_TRIPSTOPS = 'preprocessed/tripstops.pkl'
-DATA_FILENAME_PINGS = 'preprocessed/pings.pkl'
-
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 DATABASE_URI = os.environ.get("DATABASE_URI")
-
-conn = psycopg2.connect(DATABASE_URI)
-cursor = conn.cursor()
-cursor.execute("SET TIME ZONE 'Singapore';")
 
 # Helper function to convert results from SQL SELECT query to pandas dataframe
 def to_pandas(column_names, records):
@@ -31,114 +24,105 @@ def to_pandas(column_names, records):
     return table
 
 # Helper function to do SQL SELECT query
-def query(sql, data=(), column_names=[]):
+def query(sql, data=(), column_names=[], pandas_format=True):
+    conn = psycopg2.connect(DATABASE_URI)
+    cursor = conn.cursor()
+    cursor.execute("SET TIME ZONE 'Singapore';")
     cursor.execute(sql, data)
     records = cursor.fetchall()
-    if len(column_names) == 0 or len(records) == 0 or len(records[0]) != len(column_names):
+    # This returns a list of results (where results is represented as a tuple)
+    if not pandas_format:
+        return records
+    # For empty records, we still want to preserve the relevant column names
+    if len(records) == 0:
+        return pd.DataFrame(columns=column_names)
+    # For error cases with no column names, or mismatch of no. of columns
+    if len(column_names) == 0 or len(records[0]) != len(column_names):
         return pd.DataFrame()
     return to_pandas(column_names, records).set_index('id')
 
 def get_routes():
-    try:
-        return pd.read_pickle(DATA_FILENAME_ROUTES)
-    except:
-        sql = """
-              SELECT
-                  id, path
-              FROM
-                  routes
-              """
-        records = query(sql, column_names=['id', 'path'])
-        records.to_pickle(DATA_FILENAME_ROUTES)
-        return records
+    sql = """
+          SELECT
+              id, path
+          FROM
+              routes
+          """
+    records = query(sql, column_names=COLUMN_NAMES_ROUTES)
+    return records
 
-def get_trips():
-    try:
-        return pd.read_pickle(DATA_FILENAME_TRIPS)
-    except:
-        sql = """
-              SELECT
-                  id, date, "routeId"
-              FROM
-                  trips
-              """
-        records = query(sql, column_names=['id', 'date', 'routeId'])
-        records.to_pickle(DATA_FILENAME_TRIPS)
-        return records
+def get_trips(trip_id=None):
+    sql = """
+          SELECT
+              id, date, "routeId"
+          FROM
+              trips
+          {}
+          """ \
+          .format('' if trip_id == None else 'WHERE id = %(trip_id)s')
+    data = {'trip_id': 0 if trip_id == None else int(trip_id)}
+    records = query(sql, data=data, column_names=COLUMN_NAMES_TRIPS)
+    return records
 
-def get_tripstops(trip_id=None):
-    try:
-        tripstops = pd.read_pickle(DATA_FILENAME_TRIPSTOPS)
-        return tripstops if trip_id == None else tripstops[tripstops['tripId'] == trip_id]
-    except:
-        sql = """
-              SELECT
-                  ts.id, "tripId", "stopId", "canBoard", "canAlight", time, ST_X(s.coordinates), ST_Y(s.coordinates)
-              FROM
-                  stops AS s
-                  INNER JOIN "tripStops" AS ts ON s.id = "stopId"
-              WHERE
-                  "canBoard" = %(can_board)s {}
-              ORDER BY
-                  time
-              """ \
-              .format('' if trip_id == None else 'AND "tripId" = %(trip_id)s')
-        data = {'trip_id': trip_id,
-                'can_board': True}
-        records = query(sql,
-                        data=data,
-                        column_names=['id', 'tripId', 'stopId', 'canBoard', 'canAlight', 'time', 'lng', 'lat'])
-
-        if trip_id == None:
-            records.to_pickle(DATA_FILENAME_TRIPSTOPS)
-        return records
+def get_tripstops(tripstop_id=None, trip_id=None):
+    sql = """
+          SELECT
+              ts.id, "tripId", "stopId", "canBoard", "canAlight", time, ST_X(s.coordinates), ST_Y(s.coordinates)
+          FROM
+              stops AS s
+              INNER JOIN "tripStops" AS ts ON s.id = "stopId"
+          WHERE
+              "canBoard" = %(can_board)s {} {}
+          ORDER BY
+              time
+          """ \
+          .format('' if tripstop_id == None else 'AND ts.id = %(tripstop_id)s',
+                  '' if trip_id == None else 'AND "tripId" = %(trip_id)s')
+    data = {'tripstop_id': 0 if tripstop_id == None else int(tripstop_id),
+            'trip_id': 0 if trip_id == None else int(trip_id),
+            'can_board': True}
+    records = query(sql,
+                    data=data,
+                    column_names=COLUMN_NAMES_TRIPSTOPS)
+    return records
 
 
-def get_pings(trip_id=None, newest_datetime=datetime.now()):
-    try:
-        pings = pd.read_pickle(DATA_FILENAME_PINGS)
-        if trip_id == None:
-            return pings
-        return pings[(pings['tripId'] == trip_id) & (pings['time'] <= newest_datetime)]
-    except:
-        sql = """
-              SELECT
-                  id, ST_X(coordinates), ST_Y(coordinates), time, "tripId"
-              FROM
-                  pings
-              WHERE
-                  time <= %(newest_datetime)s {}
-              ORDER BY
-                  time
-              """ \
-              .format('' if trip_id == None else 'AND "tripId" = %(trip_id)s')
-        data = {'trip_id': trip_id,
-                'newest_datetime': newest_datetime}
-        records = query(sql,
-                        data=data,
-                        column_names=['id', 'lng', 'lat', 'time', 'tripId'])
-
-        if trip_id == None or datetime.now() - newest_datetime < timedelta(hours=1):
-            records.to_pickle(DATA_FILENAME_PINGS)
-        return records
-
-def get_recent_pings(current_datetime=datetime.now(), interval_minutes=2):
+def get_pings(ping_id=None, trip_id=None, newest_datetime=datetime.now()):
     sql = """
           SELECT
               id, ST_X(coordinates), ST_Y(coordinates), time, "tripId"
           FROM
               pings
           WHERE
-              time >= %(current_datetime)s - INTERVAL '%(interval_minutes)s minutes'
-              AND time <= %(current_datetime)s
+              time <= %(newest_datetime)s {} {}
           ORDER BY
               time
-          """
-    data = {'current_datetime': current_datetime,
-            'interval_minutes': interval_minutes}
+          """ \
+          .format('' if ping_id == None else 'AND id = %(ping_id)s',
+                  '' if trip_id == None else 'AND "tripId" = %(trip_id)s')
+    data = {'ping_id': 0 if ping_id == None else int(ping_id),
+            'trip_id': 0 if trip_id == None else int(trip_id),
+            'newest_datetime': newest_datetime}
     records = query(sql,
                     data=data,
-                    column_names=['id', 'lng', 'lat', 'time', 'tripId'])
+                    column_names=COLUMN_NAMES_PINGS)
+    return records
+
+def get_past_trips_of_route(route_id, date_time):
+    sql = """
+          SELECT
+              id, date, "routeId"
+          FROM
+              trips
+          WHERE
+              "routeId" = %(route_id)s
+              AND date < %(date_time)s
+          ORDER BY
+              date DESC
+          """
+    data = {'route_id': int(route_id),
+            'date_time': date_time}
+    records = query(sql, data=data, column_names=COLUMN_NAMES_TRIPS)
     return records
 
 def get_operating_trip_ids(date_time=datetime.now()):
@@ -153,8 +137,9 @@ def get_operating_trip_ids(date_time=datetime.now()):
               %(date_time)s >= MIN(time) - INTERVAL '15 minutes'
               AND %(date_time)s <= MAX(time) + INTERVAL '15 minutes'
           """
-    cursor.execute(sql, {'date_time': date_time})
-    return flatten(cursor.fetchall())
+    data = {'date_time': date_time}
+    records = query(sql, data=data, column_names=['tripId'], pandas_format=False)
+    return flatten(records)
 
 def get_offset(minutes=20):
     sql = """
@@ -163,56 +148,12 @@ def get_offset(minutes=20):
           FROM
               pings
           """
-    cursor.execute(sql)
-    latest_known_datetime = cursor.fetchall()[0][0]
+    records = query(sql, column_names=['time'], pandas_format=False)
+    latest_known_datetime = records[0][0]
     time_diff = datetime.now(pytz.timezone('Singapore')) - latest_known_datetime
     return time_diff + timedelta(minutes=minutes)
-
-def setup_data():
-    global_data.routes = get_routes()
-    global_data.trips = get_trips()
-    global_data.tripstops = get_tripstops()
-    global_data.pings = get_pings()
-
-# For routes, trips, tripstops, this function will be called every day
-# We first destroy the 3 files, then we regenerate re-get all the routes, trips and tripstops
-def destroy_and_recreate():
-    destroy_and_recreate_routes()
-    destroy_and_recreate_trips()
-    destroy_and_recreate_tripstops()
-    destroy_predictions()
-
-def destroy_and_recreate_routes():
-    # Destroy file first so the get operation will always go to exception clause.
-    os.remove(DATA_FILENAME_ROUTES)
-    global_data.routes = get_routes()
-
-def destroy_and_recreate_trips():
-    # Destroy file first so the get operation will always go to exception clause.
-    os.remove(DATA_FILENAME_TRIPS)
-    global_data.trips = get_trips()
-
-def destroy_and_recreate_tripstops():
-    # Destroy file first so the get operation will always go to exception clause.
-    os.remove(DATA_FILENAME_TRIPSTOPS)
-    global_data.tripstops = get_tripstops()
 
 def destroy_predictions():
     files = glob.glob('results/*')
     for f in files:
         os.remove(f)
-
-# For pings, this function will be called every minute
-# We will take the past 3 mins pings and attempt to add it to the existing pings
-def add_row(df, row):
-    # Assume key is at the first column (row[0])
-    df.loc[row[0]] = row[1:]
-
-def update_df(df1, df2):
-    for row in df2.itertuples():
-        add_row(df1, row)
-
-def update_pings(current_datetime=datetime.now()):
-    new_pings = get_recent_pings(current_datetime=current_datetime)
-    update_df(global_data.pings, new_pings)
-    global_data.pings.to_pickle(DATA_FILENAME_PINGS)
