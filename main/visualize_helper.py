@@ -98,8 +98,9 @@ def add_marker_per_minute(folium_map, trip_id, stop_id, date_time, next_number_o
                    folium_icon=folium.Icon(color='green'), 
                    folium_popup=folium.Popup(
                     folium.Html(
-                        "<b>Stop id: {}</b><br>Predicted: {}<br>Actual: {}".format(
+                        "<b>Stop id: {}</b><br>Current time: {}<br>Predicted: {}<br>Actual: {}".format(
                             stop_id,
+                            current_datetime.strftime(TIME_FORMAT),
                             predicted_arrival_time.strftime(TIME_FORMAT),
                             actual_arrival_time.strftime(TIME_FORMAT)
                         ), script=True)))
