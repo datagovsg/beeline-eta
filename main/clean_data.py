@@ -105,7 +105,7 @@ def clean_rep(trip_pings):
 
 # Check if the pings by a trip violates any condition for prediction.
 def check_rep(trip_id, date_time=datetime.now()):
-    trip_pings = get_pings(trip_id=trip_id)
+    trip_pings = get_pings(trip_id=trip_id, newest_datetime=date_time)
     trip_pings_parts = clean_rep(trip_pings)
 
     if len(trip_pings_parts) == 0:
