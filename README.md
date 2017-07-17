@@ -17,7 +17,6 @@ To run prediction algorithm in the background:
 cd main
 python main.py
 ```
-Note that the data is stored locally after the first time, so the first run will be very, very, slow
 
 To run unit tests:
 ```

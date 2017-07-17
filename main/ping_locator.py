@@ -10,7 +10,7 @@ from utility import latlng_distance, flatten
 p = Proj(init='epsg:3414')
 
 def get_kd_tree(trip_id, date_time=datetime.now()):
-    kd_tree_filename = 'preprocessed/kdtree-pings-{}.pickle'.format(str(trip_id))
+    kd_tree_filename = 'preprocessed/kdtree-pings-{}.pickle'.format(trip_id)
     kd_tree = None
     try:
         kd_tree = read_from_pickle(kd_tree_filename)
@@ -30,7 +30,7 @@ def get_kd_tree(trip_id, date_time=datetime.now()):
 
 # For each tripstop, find the pings within 50m from it.
 def list_of_nearest_pings_to_tripstops(trip_id, date_time=datetime.now()):
-    filename = 'preprocessed/nearest-pings-to-tripstops-{}.pickle'.format(str(trip_id))
+    filename = 'preprocessed/nearest-pings-to-tripstops-{}.pickle'.format(trip_id)
     try:
         return read_from_pickle(filename)
     except:
