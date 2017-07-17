@@ -60,9 +60,10 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     most_recent_pings = get_most_recent_pings(main_trip_id, date_time)
     if len(most_recent_pings) == 0:
         return
-    most_recent_ping_lat_lng = (most_recent_pings.iloc[0].lat, 
-                                most_recent_pings.iloc[0].lng)
-    most_recent_ping_x_y = p(most_recent_ping_lat_lng[1], 
+    most_recent_ping = most_recent_pings.iloc[0]
+    most_recent_ping_lat_lng = (most_recent_ping.lat,
+                                most_recent_ping.lng)
+    most_recent_ping_x_y = p(most_recent_ping_lat_lng[1],
                              most_recent_ping_lat_lng[0])
     
     # Get alternative past trip_ids for the same route as main_trip_id 
@@ -82,19 +83,21 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
             continue
         
         # Find the trip ping that is closest to most_recent_ping (<20m)
-        cleaned_trip_pings = get_cleaned_trip_pings(get_pings(trip_id=trip_id))
+        cleaned_trip_pings = get_cleaned_trip_pings(get_pings(trip_id=trip_id)) # Past trip, just use full trip pings
         kd_tree = get_kd_tree(trip_id, date_time=date_time)
         if not kd_tree:
             continue
-        nearest_ping_indices = kd_tree.query_ball_point(most_recent_ping_x_y, 
+        nearest_ping_indices = kd_tree.query_ball_point(most_recent_ping_x_y,
                                                         r=threshold_distance)
-        distances = [latlng_distance(most_recent_ping_lat_lng, 
+        distances = [latlng_distance(most_recent_ping_lat_lng,
                          (cleaned_trip_pings[i].lat, cleaned_trip_pings[i].lng))
                      for i in nearest_ping_indices]
-        timings = [cleaned_trip_pings[i].time for i in nearest_ping_indices]
+        time_differences = [abs(cleaned_trip_pings[i].time - most_recent_ping.time).total_seconds()
+                            for i in nearest_ping_indices]
+        # Only time difference is use as metric since all the distances are below 20m anyway.
         indices_ordered = \
-            [index for dist, timing, index in 
-             sorted(list(zip(distances, timings, nearest_ping_indices)))]
+            [index for time_difference, index in
+             sorted(list(zip(time_differences, nearest_ping_indices)))]
         if len(indices_ordered) == 0:
             continue
         closest_ping = cleaned_trip_pings[indices_ordered[0]]
@@ -135,4 +138,10 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     predicted_arrival_times = \
         [most_recent_pings.iloc[0].time.to_datetime() + timedelta(seconds=duration)
          for duration in duration_per_trip]
+
+    # Handle edge case: When the bus is parking near the first stop.
+    if len(predicted_arrival_times) > 0:
+        first_stop_planned_time = main_trip_tripstops.iloc[0].time.to_datetime()
+        predicted_arrival_times[0] = max(predicted_arrival_times[0], first_stop_planned_time)
+
     return predicted_arrival_times
