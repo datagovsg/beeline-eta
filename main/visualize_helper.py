@@ -33,7 +33,8 @@ def see_trip_parts(trip_id):
 #     next_number_of_minutes: Add green marker showing where the bus is at each minute,
 #                             starting from date_time
 def see_trip_wrapper(trip_id, date_time=None, stop_id=None, next_number_of_minutes=0):
-    pings = get_pings(trip_id=trip_id)
+    pings = get_pings(trip_id=trip_id,
+                      newest_datetime=date_time + timedelta(minutes=next_number_of_minutes) if date_time else datetime.now())
     pings['time'] = pings['time'].apply(lambda date_time: date_time.replace(tzinfo=None))
     tripstops = get_tripstops(trip_id=trip_id)
     tripstops['time'] = tripstops['time'].apply(lambda date_time: date_time.replace(tzinfo=None))
@@ -43,7 +44,7 @@ def see_trip_wrapper(trip_id, date_time=None, stop_id=None, next_number_of_minut
     
     if stop_id and date_time and next_number_of_minutes:
         add_marker_per_minute(m, trip_id, stop_id, date_time, next_number_of_minutes)
-        filename += '-stop-{}-on-{}-for-{}-minutes'.format(trip_id, date_time, next_number_of_minutes)
+        filename += '-stop-{}-on-{}'.format(trip_id, date_time, next_number_of_minutes)
     elif date_time:
         filename += '-on-{}'.format(date_time)
 
@@ -85,7 +86,7 @@ def see_trip(trip_pings, trip_tripstops, date_time=None):
     return m
 
 def add_marker_per_minute(folium_map, trip_id, stop_id, date_time, next_number_of_minutes):
-    for i in range(next_number_of_minutes):
+    for i in range(next_number_of_minutes + 1):
         current_datetime = date_time + timedelta(minutes=i)
         recent_pings = get_most_recent_pings(trip_id, current_datetime)
         if len(recent_pings) == 0:
@@ -101,12 +102,12 @@ def add_marker_per_minute(folium_map, trip_id, stop_id, date_time, next_number_o
                         "<b>Stop id: {}</b><br>Current time: {}<br>Predicted: {}<br>Actual: {}".format(
                             stop_id,
                             current_datetime.strftime(TIME_FORMAT),
-                            predicted_arrival_time.strftime(TIME_FORMAT),
-                            actual_arrival_time.strftime(TIME_FORMAT)
+                            predicted_arrival_time.strftime(TIME_FORMAT) if predicted_arrival_time else '',
+                            actual_arrival_time.strftime(TIME_FORMAT) if actual_arrival_time else ''
                         ), script=True)))
 
 # Usage:
 # print(see_trip_parts(18258))
 # print(see_trip_wrapper(18258))
 # print(see_trip_wrapper(18258, date_time=datetime(2017, 7, 6, 9, 28, 43)))
-# print(see_trip_wrapper(18258, date_time=datetime(2017, 7, 6, 9, 28, 43), stop_id=4468, next_number_of_minutes=6))
+# print(see_trip_wrapper(18258, date_time=datetime(2017, 7, 6, 9, 28, 43), stop_id=4468, next_number_of_minutes=8))
