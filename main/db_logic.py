@@ -5,7 +5,8 @@ import pickle
 import psycopg2
 import pytz
 from constants import (
-    COLUMN_NAMES_PINGS, COLUMN_NAMES_ROUTES, COLUMN_NAMES_TRIPS, COLUMN_NAMES_TRIPSTOPS
+    COLUMN_NAMES_PINGS, COLUMN_NAMES_ROUTES, COLUMN_NAMES_STOPS,
+    COLUMN_NAMES_TRIPS, COLUMN_NAMES_TRIPSTOPS
 )
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -64,10 +65,24 @@ def get_trips(trip_id=None):
     records = query(sql, data=data, column_names=COLUMN_NAMES_TRIPS)
     return records
 
+def get_stops(stop_id=None):
+    sql = """
+          SELECT
+              id, ST_X(coordinates), ST_Y(coordinates)
+          FROM
+              stops
+          {}
+          """ \
+          .format('' if stop_id == None else 'WHERE id = %(stop_id)s')
+    data = {'stop_id': 0 if stop_id == None else int(stop_id)}
+    records = query(sql, data=data, column_names=COLUMN_NAMES_STOPS)
+    return records
+
 def get_tripstops(tripstop_id=None, trip_id=None):
     sql = """
           SELECT
-              ts.id, "tripId", "stopId", "canBoard", "canAlight", time, ST_X(s.coordinates), ST_Y(s.coordinates)
+              ts.id, "tripId", "stopId", "canBoard", "canAlight", time,
+              ST_X(s.coordinates), ST_Y(s.coordinates)
           FROM
               stops AS s
               INNER JOIN "tripStops" AS ts ON s.id = "stopId"
