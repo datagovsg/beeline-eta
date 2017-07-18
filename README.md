@@ -23,3 +23,10 @@ To run unit tests:
 cd main
 python -m test
 ```
+
+To visualize bus positions and prediction and actual arrival timings,
+change the commented out code at the bottom of visualize_helper.py and run the following:
+```
+cd main
+python visualize_helper.py
+```
