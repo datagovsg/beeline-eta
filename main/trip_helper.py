@@ -37,3 +37,16 @@ is_circular_trip = lambda trip_id: any([count > 1
                                         get_tripstops(trip_id=trip_id)
                                         .groupby('stopId')
                                         .size()])
+
+# Given a list of stops, return the cycle length of the stops
+def get_cycle_length(stop_ids):
+    first_stop_id = stop_ids[0]
+    for i in range(1, len(stop_ids)):
+        if stop_ids[i] == first_stop_id:
+            return i
+    return -1
+
+# Given a list of stops (circular), return the cycle of the stops
+def get_trip_cycle(stop_ids):
+    cycle_length = get_cycle_length(stop_ids)
+    return stop_ids[:cycle_length]
