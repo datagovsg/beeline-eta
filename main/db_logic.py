@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from os.path import join, dirname
 from utility import flatten
 
-DATABASE_URI = os.environ.get("DATABASE_URI")
+DATABASE_URI = os.environ.get("DATABASE_URL")
 
 # Helper function to convert results from SQL SELECT query to pandas dataframe
 def to_pandas(column_names, records):
