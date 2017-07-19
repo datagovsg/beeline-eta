@@ -24,5 +24,6 @@ def replay_date(minutes=10):
     run_forever(offset=offset)
 
 if __name__ == '__main__':
-    #run_forever()
-    replay_date()
+    print('Welcome to the trip prediction background task')
+    run_forever()
+    # replay_date()
