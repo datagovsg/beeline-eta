@@ -120,7 +120,7 @@ def get_pings(ping_id=None, trip_id=None, newest_datetime=datetime.now()):
     return records
 
 def get_past_trips_of_route(route_id, before_date=datetime.now()):
-    after_date = before_date - timedelta(months=2)
+    after_date = before_date - timedelta(days=30)
     sql = """
           SELECT
               id, date, "routeId"
