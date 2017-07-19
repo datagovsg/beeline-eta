@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from os.path import join, dirname
 from utility import flatten
 
-DATABASE_URI = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 # Helper function to convert results from SQL SELECT query to pandas dataframe
 def to_pandas(column_names, records):
@@ -22,7 +22,7 @@ def to_pandas(column_names, records):
 
 # Helper function to do SQL SELECT query
 def query(sql, data=(), column_names=[], pandas_format=True):
-    conn = psycopg2.connect(DATABASE_URI)
+    conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
     cursor.execute("SET TIME ZONE 'Singapore';")
     cursor.execute(sql, data)

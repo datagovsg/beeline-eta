@@ -36,7 +36,11 @@ def update_timings_for_trip(date_time, trip_id):
     predicted_arrival_times = []
 
     if is_circular_trip(trip_id):
-        predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
+        # The next line is commented out because it takes too long to run.
+        # predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
+        message = 'No prediction: Circular route prediction will be implemented in the future.'
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
+        return
     else:
         predicted_arrival_times = predict_arrival_times_for_normal_trips(trip_id, date_time)
 
