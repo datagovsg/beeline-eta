@@ -2,6 +2,7 @@
 from flask import Flask, abort, jsonify
 
 from datetime import datetime
+import glob
 import pickle
 
 app = Flask(__name__)
@@ -17,6 +18,18 @@ def stringify_predictions(predictions):
             result[str(stop_id)] = date_time
     return result
 
+@app.route('/api/v1.0/', methods=['GET'])
+def get_predictions():
+    try:
+        predictions_per_trip = {}
+        files = glob.glob('../main/results/*')
+        for f in files:
+            trip_id = [int(s) for s in f.replace('.', '-').split('-') if s.isdigit()][0]
+            predictions_per_trip[trip_id] = stringify_predictions(pickle.load(open(f, 'rb')))
+    except:
+        abort(500)
+
+    return jsonify(predictions_per_trip)
 
 @app.route('/api/v1.0/<int:trip_id>', methods=['GET'])
 def get_predictions(trip_id):
