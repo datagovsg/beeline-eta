@@ -167,4 +167,6 @@ def get_offset(minutes=20):
 def destroy_predictions():
     files = glob.glob('results/*')
     for f in files:
+        if f.endswith('gitkeep'):
+          continue
         os.remove(f)

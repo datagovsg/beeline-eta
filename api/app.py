@@ -24,8 +24,10 @@ def get_predictions():
         predictions_per_trip = {}
         files = glob.glob('../main/results/*')
         for f in files:
+            if f.endswith('gitkeep'):
+                continue
             trip_id = [int(s) for s in f.replace('.', '-').split('-') if s.isdigit()][0]
-            predictions_per_trip[trip_id] = stringify_predictions(pickle.load(open(f, 'rb')))
+            predictions_per_trip[trip_id = stringify_predictions(pickle.load(open(f, 'rb')))
     except:
         abort(500)
 
