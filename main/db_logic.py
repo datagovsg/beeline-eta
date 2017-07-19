@@ -119,7 +119,8 @@ def get_pings(ping_id=None, trip_id=None, newest_datetime=datetime.now()):
                     column_names=COLUMN_NAMES_PINGS)
     return records
 
-def get_past_trips_of_route(route_id, date_time):
+def get_past_trips_of_route(route_id, before_date=datetime.now()):
+    after_date = before_date - timedelta(months=2)
     sql = """
           SELECT
               id, date, "routeId"
@@ -127,12 +128,14 @@ def get_past_trips_of_route(route_id, date_time):
               trips
           WHERE
               "routeId" = %(route_id)s
-              AND date < %(date_time)s
+              AND date > %(after_date)s
+              AND date < %(before_date)s
           ORDER BY
               date DESC
           """
     data = {'route_id': int(route_id),
-            'date_time': date_time}
+            'after_date': after_date,
+            'before_date': before_date}
     records = query(sql, data=data, column_names=COLUMN_NAMES_TRIPS)
     return records
 

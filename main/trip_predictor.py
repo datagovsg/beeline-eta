@@ -70,8 +70,8 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     # Get alternative past trip_ids for the same route as main_trip_id 
     route_id = get_trips(trip_id=main_trip_id).iloc[0].routeId
 
-    trip_ids = get_past_trips_of_route(route_id, date_time).index
-    trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id]
+    trip_ids = get_past_trips_of_route(route_id, before_date=date_time).index
+    trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id][:20] # Keep it within 20 trip_ids
 
     main_trip_tripstops = get_tripstops(trip_id=main_trip_id)
 
@@ -163,8 +163,8 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
     # Get alternative past trip_ids for the same route as main_trip_id
     route_id = get_trips(trip_id=main_trip_id).iloc[0].routeId
 
-    trip_ids = get_past_trips_of_route(route_id, date_time).index
-    trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id]
+    trip_ids = get_past_trips_of_route(route_id, before_date=date_time).index
+    trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id][:20] # Keep it within 20 trip_ids
 
     main_trip_tripstops = get_tripstops(trip_id=main_trip_id)
 
