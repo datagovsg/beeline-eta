@@ -9,12 +9,8 @@ from constants import (
     COLUMN_NAMES_TRIPS, COLUMN_NAMES_TRIPSTOPS
 )
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 from os.path import join, dirname
 from utility import flatten
-
-dotenv_path = join(dirname(__file__), '.env')
-load_dotenv(dotenv_path)
 
 DATABASE_URI = os.environ.get("DATABASE_URI")
 
