@@ -3,3 +3,8 @@
 
 # Ignore .env file
 .env
+
+# Directories created by virtualenv
+bin
+lib
+include
