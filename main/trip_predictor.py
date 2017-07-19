@@ -135,12 +135,12 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     duration_per_trip = [mean_duration 
                          for mean_duration, sd_duration in mean_sd_of_duration_per_trip]
     predicted_arrival_times = \
-        [most_recent_pings.iloc[0].time.to_datetime() + timedelta(seconds=duration)
+        [most_recent_pings.iloc[0].time.to_pydatetime() + timedelta(seconds=duration)
          for duration in duration_per_trip]
 
     # Handle edge case: When the bus is parking near the first stop.
     if len(predicted_arrival_times) > 0:
-        first_stop_planned_time = main_trip_tripstops.iloc[0].time.to_datetime()
+        first_stop_planned_time = main_trip_tripstops.iloc[0].time.to_pydatetime()
         predicted_arrival_times[0] = max(predicted_arrival_times[0], first_stop_planned_time)
 
     return predicted_arrival_times
@@ -229,12 +229,12 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
         median_duration_per_trip.append(np.median(sorted_list_of_durations))
 
     predicted_arrival_times = \
-        [most_recent_pings.iloc[0].time.to_datetime() + timedelta(seconds=duration)
+        [most_recent_pings.iloc[0].time.to_pydatetime() + timedelta(seconds=duration)
          for duration in median_duration_per_trip]
 
     # Handle edge case: When the bus is parking near the first stop.
     if len(predicted_arrival_times) > 0:
-        first_stop_planned_time = main_trip_tripstops.iloc[0].time.to_datetime()
+        first_stop_planned_time = main_trip_tripstops.iloc[0].time.to_pydatetime()
         predicted_arrival_times[0] = max(predicted_arrival_times[0], first_stop_planned_time)
 
     return predicted_arrival_times
