@@ -11,6 +11,7 @@ def write_to_pickle(filename, variable, to_bucketeer=False):
 def read_from_pickle(filename, from_bucketeer=False):
     if from_bucketeer:
         download_file(filename)
+        path, filename = split_filename(filename)
 
     with open(filename, 'rb') as f:
         return pickle.load(f)

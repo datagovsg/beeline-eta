@@ -40,7 +40,7 @@ def download_file(full_filename):
     print('Attempting to download from {}'.format(full_key_name))
     k = Key(bucket)
     k.key = full_key_name
-    k.get_contents_from_filename(full_key_name)
+    k.get_contents_to_filename(filename)
 
 def list_files(path):
     conn, bucket = get_connection_and_bucket()
