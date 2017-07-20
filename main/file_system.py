@@ -29,16 +29,18 @@ def upload_file(full_filename):
     path, filename = split_filename(full_filename)
     conn, bucket = get_connection_and_bucket()
     full_key_name = os.path.join(path, filename)
-    k = bucket.new_key(full_key_name)
-    k.set_contents_from_filename(filename)
+    print('Attempting to upload to {}'.format(full_key_name))
+    key = bucket.new_key(full_key_name)
+    key.set_contents_from_filename(full_key_name)
 
 def download_file(full_filename):
     path, filename = split_filename(full_filename)
     conn, bucket = get_connection_and_bucket()
     full_key_name = os.path.join(path, filename)
+    print('Attempting to download from {}'.format(full_key_name))
     k = Key(bucket)
     k.key = full_key_name
-    k.get_contents_from_filename(filename)
+    k.get_contents_from_filename(full_key_name)
 
 def list_files(path):
     conn, bucket = get_connection_and_bucket()
