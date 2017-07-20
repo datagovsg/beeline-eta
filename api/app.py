@@ -2,12 +2,20 @@
 from flask import Flask, abort, jsonify
 
 from datetime import datetime
+from file_system import download_file
 import glob
 import pickle
 
 app = Flask(__name__)
 
-get_filename = lambda trip_id: '../main/results/prediction-{}.pickle'.format(trip_id)
+get_filename = lambda trip_id: 'results/prediction-{}.pickle'.format(trip_id)
+
+def read_from_pickle(filename, from_bucketeer=False):
+    if from_bucketeer:
+        download_file(filename)
+
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
 
 def stringify_predictions(predictions):
     result = {}
@@ -18,6 +26,7 @@ def stringify_predictions(predictions):
             result[str(stop_id)] = date_time
     return result
 
+"""
 @app.route('/api/v1.0/', methods=['GET'])
 def get_all_predictions():
     try:
@@ -32,11 +41,12 @@ def get_all_predictions():
         abort(500)
 
     return jsonify(predictions_per_trip)
+"""
 
 @app.route('/api/v1.0/<int:trip_id>', methods=['GET'])
 def get_predictions(trip_id):
     try:
-        predictions = pickle.load(open(get_filename(trip_id), 'rb'))
+        predictions = pickle.load(read_from_pickle(get_filename(trip_id), to_bucketeer=True))
     except:
         abort(404)
     
@@ -47,7 +57,7 @@ def get_predictions(trip_id):
 @app.route('/api/v1.0/<int:trip_id>/<int:stop_id>', methods=['GET'])
 def get_prediction(trip_id, stop_id):
     try:
-        predictions = pickle.load(open(get_filename(trip_id), 'rb'))
+        predictions = pickle.load(read_from_pickle(get_filename(trip_id), to_bucketeer=True))
     except:
         abort(404)
     
