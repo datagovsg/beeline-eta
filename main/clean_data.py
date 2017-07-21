@@ -114,7 +114,7 @@ def check_rep(trip_id, date_time=datetime.now()):
     if len(trip_pings_parts[-1]) < 3:
         return 'No prediction: Insufficient latest trip pings for prediction'
 
-    if date_time - trip_pings_parts[-1][-1].time.replace(tzinfo=None) >= timedelta(minutes=1):
-        return 'No prediction: The latest ping is more than 1 minute from now; prediction will be inaccurate'
+    if date_time - trip_pings_parts[-1][-1].time.replace(tzinfo=None) >= timedelta(minutes=5):
+        return 'No prediction: The latest ping is more than 5 minutes from now; prediction will be inaccurate'
 
     return 'Can predict'

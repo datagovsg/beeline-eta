@@ -44,7 +44,7 @@ def get_cycle_length(stop_ids):
     for i in range(1, len(stop_ids)):
         if stop_ids[i] == first_stop_id:
             return i
-    return -1
+    return len(stop_ids)
 
 # Given a list of stops (circular), return the cycle of the stops
 def get_trip_cycle(stop_ids):
