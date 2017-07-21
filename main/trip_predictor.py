@@ -16,7 +16,7 @@ from trip_helper import (
 )
 from utility import is_sorted, latlng_distance, transpose
 
-def update_timings_for_trip(date_time, trip_id):
+def update_timings_for_trip(date_time, trip_id, to_bucketeer=True):
     trip_tripstops = get_tripstops(trip_id=trip_id)
     trip_pings = get_pings(trip_id=trip_id, newest_datetime=date_time)
 
@@ -30,34 +30,33 @@ def update_timings_for_trip(date_time, trip_id):
     # If the pings for trip_id fails check_rep, we show them the error message
     message = check_rep(trip_id, date_time=date_time)
     if message.startswith('No prediction'):
-        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops), to_bucketeer=to_bucketeer)
         return
 
     predicted_arrival_times = []
 
     if is_circular_trip(trip_id):
-        # The next line is commented out because it takes too long to run.
-        # predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
-        message = 'No prediction: Circular route prediction will be implemented in the future.'
-        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
-        return
+        predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
+        #message = 'No prediction: Circular route prediction will be implemented in the future.'
+        #update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops), to_bucketeer=to_bucketeer)
+        #return
     else:
         predicted_arrival_times = predict_arrival_times_for_normal_trips(trip_id, date_time)
 
     if not predicted_arrival_times:
         message = 'No prediction: Insufficient historical data for prediction.'
-        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops))
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops), to_bucketeer=to_bucketeer)
         return
 
     # Save and overwrite prediction
-    update_prediction(trip_id, stop_ids, predicted_arrival_times)
+    update_prediction(trip_id, stop_ids, predicted_arrival_times, to_bucketeer=to_bucketeer)
 
     return dict(zip(stop_ids, predicted_arrival_times))
 
 
-def update_prediction(trip_id, stop_ids, predicted_arrival_times):
+def update_prediction(trip_id, stop_ids, predicted_arrival_times, to_bucketeer=True):
     filename = 'results/prediction-{}.pickle'.format(str(trip_id))
-    write_to_pickle(filename, dict(zip(stop_ids, predicted_arrival_times)), to_bucketeer=True)
+    write_to_pickle(filename, dict(zip(stop_ids, predicted_arrival_times)), to_bucketeer=to_bucketeer)
 
 def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     threshold_distance = 20
@@ -171,15 +170,16 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
     trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id][:20] # Keep it within 20 trip_ids
 
     main_trip_tripstops = get_tripstops(trip_id=main_trip_id)
+    trip_cycle_main_trip_stops = get_trip_cycle(main_trip_tripstops.stopId.tolist())
 
     list_of_trip_tripstop_durations = []
     for trip_id in trip_ids:
-        if len(list_of_trip_tripstop_durations) >= 3:
+        if len(list_of_trip_tripstop_durations) >= 1:
             break
 
         trip_tripstops = get_tripstops(trip_id=trip_id)
-        if get_trip_cycle(trip_tripstops.stopId.tolist()) \
-        != get_trip_cycle(main_trip_tripstops.stopId.tolist()):
+        trip_cycle_trip_tripstops = get_trip_cycle(trip_tripstops.stopId.tolist())
+        if trip_cycle_trip_tripstops != trip_cycle_main_trip_stops:
             continue
 
         # Find the trip ping that is closest to most_recent_ping (<20m) and time
@@ -225,12 +225,11 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
 
         list_of_trip_tripstop_durations.append(duration_per_stop)
 
-    # After getting a few values from prev step, can take mean + S.D.
+    # After getting a few values from prev step, can take median.
     median_duration_per_trip = []
     list_of_durations_per_trip = transpose(list_of_trip_tripstop_durations)
     for list_of_durations in list_of_durations_per_trip:
-        sorted_list_of_durations = sorted(list_of_durations)
-        median_duration_per_trip.append(np.median(sorted_list_of_durations))
+        median_duration_per_trip.append(np.median(list_of_durations))
 
     predicted_arrival_times = \
         [most_recent_pings.iloc[0].time.to_pydatetime() + timedelta(seconds=duration)

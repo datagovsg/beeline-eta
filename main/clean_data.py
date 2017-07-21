@@ -92,7 +92,7 @@ def clean_rep(trip_pings):
         return []
     
     trip_pings_parts = \
-        [[trip_ping for trip_ping in trip_pings.sort_values('time').itertuples()]]
+        [[trip_ping for trip_ping in trip_pings.itertuples()]]
     
     # Use multiple passes to iteratively smoothen trip parts, 
     # and split trip by speed and time
