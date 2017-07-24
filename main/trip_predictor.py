@@ -4,7 +4,7 @@ from clean_data import check_rep, get_cleaned_trip_pings, is_sharp_turn
 from constants import DATETIME_FORMAT, DATE_FORMAT
 from datetime import datetime, timedelta
 from db_logic import (
-    get_pings, get_trips, get_tripstops, get_past_trips_of_route
+    get_pings, get_trips, get_tripstops, get_past_trips_of_route, reset_connection
 )
 from ping_locator import (
     get_kd_tree, list_of_nearest_pings_to_tripstops, list_of_nearest_pings_to_stops, p
@@ -17,6 +17,9 @@ from trip_helper import (
 from utility import is_sorted, latlng_distance, transpose
 
 def update_timings_for_trip(date_time, trip_id, to_bucketeer=True):
+    # Reset database connection so each process uses a different connection
+    reset_connection()
+
     trip_tripstops = get_tripstops(trip_id=trip_id)
     trip_pings = get_pings(trip_id=trip_id, newest_datetime=date_time)
 
@@ -67,6 +70,7 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     most_recent_ping = most_recent_pings.iloc[0]
     most_recent_ping_lat_lng = (most_recent_ping.lat,
                                 most_recent_ping.lng)
+    # For KD-Tree purposes
     most_recent_ping_x_y = p(most_recent_ping_lat_lng[1],
                              most_recent_ping_lat_lng[0])
     
@@ -157,6 +161,7 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
     most_recent_ping = most_recent_pings.iloc[0]
     most_recent_ping_lat_lng = (most_recent_ping.lat,
                                 most_recent_ping.lng)
+    # For KD-Tree purposes
     most_recent_ping_x_y = p(most_recent_ping_lat_lng[1],
                              most_recent_ping_lat_lng[0])
 
@@ -165,7 +170,6 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
 
     # Get alternative past trip_ids for the same route as main_trip_id
     route_id = get_trips(trip_id=main_trip_id).iloc[0].routeId
-
     trip_ids = get_past_trips_of_route(route_id, before_date=date_time).index
     trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id][:20] # Keep it within 20 trip_ids
 
@@ -174,9 +178,11 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
 
     list_of_trip_tripstop_durations = []
     for trip_id in trip_ids:
+        # Once we have sufficient results, we can terminate
         if len(list_of_trip_tripstop_durations) >= 1:
             break
 
+        # Check whether the trip cycle for past trip and current trip is the same
         trip_tripstops = get_tripstops(trip_id=trip_id)
         trip_cycle_trip_tripstops = get_trip_cycle(trip_tripstops.stopId.tolist())
         if trip_cycle_trip_tripstops != trip_cycle_main_trip_stops:
@@ -187,6 +193,7 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
         if not cleaned_trip_pings:
             continue
 
+        # Get past trip's KD-Tree
         kd_tree = get_kd_tree(trip_id, date_time=date_time)
         if not kd_tree:
             continue
@@ -199,10 +206,9 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
         nearest_ping_indices = [i for i in nearest_ping_indices
                                 if not is_sharp_turn(trip_bearings[i], main_trip_current_bearing)]
 
+        # Only time difference is used as metric since all the distances from current ping are below 20m anyway.
         time_differences = [abs(cleaned_trip_pings[i].time - most_recent_ping.time).total_seconds()
                             for i in nearest_ping_indices]
-
-        # Only time difference is used as metric since all the distances are below 20m anyway.
         indices_ordered = \
             [index for time_difference, index in
              sorted(list(zip(time_differences, nearest_ping_indices)))]

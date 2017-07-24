@@ -14,6 +14,13 @@ from utility import flatten
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+conn = psycopg2.connect(DATABASE_URL)
+cursor = conn.cursor()
+
+def reset_connection():
+    conn = psycopg2.connect(DATABASE_URL)
+    cursor = conn.cursor()
+
 # Helper function to convert results from SQL SELECT query to pandas dataframe
 def to_pandas(column_names, records):
     table = pd.DataFrame(records)
@@ -22,8 +29,6 @@ def to_pandas(column_names, records):
 
 # Helper function to do SQL SELECT query
 def query(sql, data=(), column_names=[], pandas_format=True):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
     cursor.execute("SET TIME ZONE 'Singapore';")
     cursor.execute(sql, data)
     records = cursor.fetchall()
@@ -166,10 +171,3 @@ def get_offset(minutes=20):
     latest_known_datetime = records[0][0]
     time_diff = datetime.now(pytz.timezone('Singapore')) - latest_known_datetime
     return time_diff + timedelta(minutes=minutes)
-
-def destroy_predictions():
-    files = glob.glob('results/*')
-    for f in files:
-        if f.endswith('gitkeep'):
-          continue
-        os.remove(f)
