@@ -12,10 +12,7 @@ from datetime import datetime, timedelta
 from os.path import join, dirname
 from utility import flatten
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-conn = psycopg2.connect(DATABASE_URL)
-cursor = conn.cursor()
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def reset_connection():
     conn = psycopg2.connect(DATABASE_URL)
@@ -29,6 +26,8 @@ def to_pandas(column_names, records):
 
 # Helper function to do SQL SELECT query
 def query(sql, data=(), column_names=[], pandas_format=True):
+    conn = psycopg2.connect(DATABASE_URL)
+    cursor = conn.cursor()
     cursor.execute("SET TIME ZONE 'Singapore';")
     cursor.execute(sql, data)
     records = cursor.fetchall()
@@ -40,7 +39,7 @@ def query(sql, data=(), column_names=[], pandas_format=True):
         return pd.DataFrame(columns=column_names)
     # For error cases with no column names, or mismatch of no. of columns
     if len(column_names) == 0 or len(records[0]) != len(column_names):
-        return pd.DataFrame()
+        raise psycopg2.Error('Mismatch number of columns headings and body.')
     return to_pandas(column_names, records).set_index('id')
 
 def get_routes():
@@ -69,7 +68,7 @@ def get_trips(trip_id=None):
 def get_stops(stop_id=None):
     sql = """
           SELECT
-              id, ST_X(coordinates), ST_Y(coordinates)
+              id, heading, ST_X(coordinates), ST_Y(coordinates)
           FROM
               stops
           {}

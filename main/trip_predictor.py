@@ -17,11 +17,7 @@ from trip_helper import (
 from utility import is_sorted, latlng_distance, transpose
 
 def update_timings_for_trip(date_time, trip_id, to_bucketeer=True):
-    # Reset database connection so each process uses a different connection
-    reset_connection()
-
     trip_tripstops = get_tripstops(trip_id=trip_id)
-    trip_pings = get_pings(trip_id=trip_id, newest_datetime=date_time)
 
     stop_ids = trip_tripstops.stopId.tolist()
     if is_circular_trip(trip_id):
@@ -39,10 +35,10 @@ def update_timings_for_trip(date_time, trip_id, to_bucketeer=True):
     predicted_arrival_times = []
 
     if is_circular_trip(trip_id):
-        predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
-        #message = 'No prediction: Circular route prediction will be implemented in the future.'
-        #update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops), to_bucketeer=to_bucketeer)
-        #return
+        #predicted_arrival_times = predict_arrival_times_for_circular_trips(trip_id, date_time)
+        message = 'No prediction: Circular route prediction will be implemented in the future.'
+        update_prediction(trip_id, stop_ids, [message] * len(trip_tripstops), to_bucketeer=to_bucketeer)
+        return
     else:
         predicted_arrival_times = predict_arrival_times_for_normal_trips(trip_id, date_time)
 
@@ -76,7 +72,6 @@ def predict_arrival_times_for_normal_trips(main_trip_id, date_time):
     
     # Get alternative past trip_ids for the same route as main_trip_id 
     route_id = get_trips(trip_id=main_trip_id).iloc[0].routeId
-
     trip_ids = get_past_trips_of_route(route_id, before_date=date_time).index
     trip_ids = [trip_id for trip_id in trip_ids if trip_id != main_trip_id][:20] # Keep it within 20 trip_ids
 
@@ -210,7 +205,7 @@ def predict_arrival_times_for_circular_trips(main_trip_id, date_time):
         time_differences = [abs(cleaned_trip_pings[i].time - most_recent_ping.time).total_seconds()
                             for i in nearest_ping_indices]
         indices_ordered = \
-            [index for time_difference, index in
+            [i for time_difference, i in
              sorted(list(zip(time_differences, nearest_ping_indices)))]
         if len(indices_ordered) == 0:
             continue
