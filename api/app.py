@@ -1,5 +1,6 @@
 #!flask/bin/python
 from flask import Flask, abort, jsonify
+from flask_cors import CORS, cross_origin
 
 from datetime import datetime
 import glob
@@ -12,6 +13,7 @@ import os
 from boto.s3.key import Key
 
 app = Flask(__name__)
+CORS(app)
 
 get_filename = lambda trip_id: 'results/prediction-{}.pickle'.format(trip_id)
 
