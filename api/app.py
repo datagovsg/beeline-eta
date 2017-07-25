@@ -2,7 +2,7 @@
 from flask import Flask, abort, jsonify
 from flask_cors import CORS, cross_origin
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import glob
 import pickle
 import psycopg2
@@ -96,10 +96,16 @@ Helper methods
 def stringify_predictions(predictions):
     result = {}
     for stop_id, date_time in predictions.items():
+        result[str(stop_id)] = {}
         if type(date_time) == datetime:
-            result[str(stop_id)] = date_time.strftime('%Y-%m-%dT%H:%M:%S+0800')
+            result[str(stop_id)]['valid'] = True
+            result[str(stop_id)]['eta'] = date_time.strftime('%Y-%m-%dT%H:%M:%S+0800')
+            result[str(stop_id)]['timeToArrival'] = (datetime.now()
+                - timedelta(minutes=int(os.environ.get('PLAYBACK_OFFSET')))
+                - date_time.replace(tzinfo=None)).total_seconds()
         else:
-            result[str(stop_id)] = date_time
+            result[str(stop_id)]['valid'] = False
+            result[str(stop_id)]['reason'] = date_time
     return result
 
 """
