@@ -44,7 +44,7 @@ def see_trip_wrapper(trip_id, date_time=None, stop_id=None, next_number_of_minut
     
     if stop_id and date_time and next_number_of_minutes:
         add_marker_per_minute(m, trip_id, stop_id, date_time, next_number_of_minutes)
-        filename += '-stop-{}-on-{}'.format(trip_id, date_time, next_number_of_minutes)
+        filename += '-stop-{}-on-{}'.format(trip_id, date_time)
     elif date_time:
         filename += '-on-{}'.format(date_time)
 

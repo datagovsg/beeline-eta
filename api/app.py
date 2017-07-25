@@ -100,9 +100,9 @@ def stringify_predictions(predictions):
         if type(date_time) == datetime:
             result[str(stop_id)]['valid'] = True
             result[str(stop_id)]['eta'] = date_time.strftime('%Y-%m-%dT%H:%M:%S+0800')
-            result[str(stop_id)]['timeToArrival'] = (datetime.now()
-                - timedelta(minutes=int(os.environ.get('PLAYBACK_OFFSET')))
-                - date_time.replace(tzinfo=None)).total_seconds()
+            result[str(stop_id)]['timeToArrival'] = (date_time.replace(tzinfo=None)
+                - (datetime.now() - timedelta(minutes=int(os.environ.get('PLAYBACK_OFFSET'))))) \
+                .total_seconds()
         else:
             result[str(stop_id)]['valid'] = False
             result[str(stop_id)]['reason'] = date_time
@@ -114,7 +114,7 @@ API
 @app.route('/api/v1.0/', methods=['GET'])
 def get_all_predictions():
     try:
-        trip_ids = get_operating_trip_ids()
+        trip_ids = get_operating_trip_ids(datetime.now() - timedelta(minutes=int(os.environ.get('PLAYBACK_OFFSET'))))
         predictions_per_trip = {}
         for trip_id in trip_ids:
             try:

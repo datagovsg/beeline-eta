@@ -42,6 +42,11 @@ def download_file(full_filename):
     k.key = full_key_name
     k.get_contents_to_filename(filename)
 
+def destroy_predictions():
+    conn, bucket = get_connection_and_bucket()
+    for key in bucket:
+        key.delete()
+
 def list_files(path):
     conn, bucket = get_connection_and_bucket()
     return [key.name for key in bucket]

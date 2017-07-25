@@ -3,6 +3,7 @@ import time
 from constants import DATETIME_FORMAT
 from datetime import datetime, timedelta
 from db_logic import get_offset
+from file_system import destroy_predictions
 from run import run
 
 # Execute the function 'run' every 60 seconds.
