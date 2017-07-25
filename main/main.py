@@ -1,3 +1,4 @@
+import os
 import time
 from constants import DATETIME_FORMAT
 from datetime import datetime, timedelta
@@ -25,5 +26,9 @@ def replay_date(minutes=10):
 
 if __name__ == '__main__':
     print('Welcome to the trip prediction background task')
-    run_forever()
-    # replay_date()
+
+    offset = os.environ.get('PLAYBACK_OFFSET', '')
+    if offset == '':
+        run_forever()
+    else:
+        replay_date(int(offset))
