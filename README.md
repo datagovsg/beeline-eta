@@ -9,7 +9,7 @@ cd api
 ./app.py
 ```
 
-For prediction algorithm, create a [.env] file with [DATABASE_URI=<database_uri>].
+For prediction algorithm, create a `.env` file with `DATABASE_URI=<database_uri>`.
 Then run the following:
 
 To run prediction algorithm in the background:
@@ -25,7 +25,7 @@ python -m test
 ```
 
 To visualize bus positions and prediction and actual arrival timings,
-change the commented out code at the bottom of [visualize_helper.py] and run the following:
+change the commented out code at the bottom of `visualize_helper.py` and run the following:
 ```
 cd main
 python visualize_helper.py
